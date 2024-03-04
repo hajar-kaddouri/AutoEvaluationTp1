@@ -1,47 +1,61 @@
 #include "validationFormat.h"
 #include <sstream>
 #include <vector>
-#include <gtest/gtest.h>
 
 namespace util {
 
+    // Vérifier la cardinalité 
     bool validePointCardinal(const std::string& p_cardinalite) {
-        // Vérifiez si p_cardinalite est parmi les valeurs autorisées
-        return p_cardinalite == "N" || p_cardinalite == "S" || 
-               p_cardinalite == "E" || p_cardinalite == "O" || 
-               p_cardinalite.empty();
+        // Les points cardinaux valides sont N, S, E, O, ou une chaîne vide.
+        const std::string pointsValides[] = {"N", "S", "E", "O", ""};
+        for (const std::string& point : pointsValides) {
+            if (p_cardinalite == point) return true;
+        }
+        return false; 
     }
 
+    // Valider ligne dans le CSV comme étant une borne de stationnement.
     bool valideLigneCVSBorneStationnement(const std::string& p_ligne) {
-        std::istringstream stream(p_ligne);
+        std::istringstream ss(p_ligne);
         std::string token;
         std::vector<std::string> champs;
 
-        // Découpez p_ligne en utilisant ',' comme séparateur
-        while (getline(stream, token, ',')) {
+        // Sépare la ligne CSV en champs en utilisant ',' comme délimiteur.
+        while (std::getline(ss, token, ',')) {
             champs.push_back(token);
         }
 
-        // Appliquez les validations spécifiques à chaque champ
-        // Exemple de validation : champs[0] ne doit pas être vide, etc.
+        // Vérifie la ligne a 7 champs.
+        if (champs.size() != 7) return false;
 
-        // Assurez-vous que la longitude et la latitude correspondent aux valeurs attendues
-        // Convertissez les champs en double au besoin et validez les valeurs
+        // seulement validePointCardinal est vérifié, Le champ point cardinal peut être vide
+        if (!validePointCardinal(champs[2])) return false;
 
-        return champs.size() == 7; // Assurez-vous que tous les champs requis sont présents et valides
+        // Conversion en double longitude et latitude -- pour vérification.
+        
+        double longitude, latitude;
+        std::istringstream(champs[5]) >> longitude;
+        std::istringstream(champs[6]) >> latitude;
+
+        // Vérifie que la longitude est -71 et la latitude est 46.
+        if (longitude != -71 || latitude != 46) return false;
+        // La ligne est valide si toutes les vérifications ci-dessus sont passées.
+        return true; 
     }
 
+    // Valide le contenu d'un fichier CSV représentant des bornes de stationnement.
     bool valideFichierBornesStationnement(std::istream& p_fluxBornesStationnement) {
         std::string ligne;
-        // Ignorez la première ligne (en-têtes)
-        std::getline(p_fluxBornesStationnement, ligne);
+        std::getline(p_fluxBornesStationnement, ligne); // pour Ignore l'en-tête.
 
+        // Parcourt chaque ligne du fichier pour validation.
         while (std::getline(p_fluxBornesStationnement, ligne)) {
             if (!ligne.empty() && !valideLigneCVSBorneStationnement(ligne)) {
-                return false; // Retournez faux si une ligne est invalide
+                return false;
             }
         }
 
-        return true; // Toutes les lignes sont valides
+        return true; // si Toutes les lignes sont valides.
     }
+
 }
